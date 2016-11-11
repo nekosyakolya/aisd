@@ -15,7 +15,6 @@
 #include <string> 
 #include <fstream>
 #include <iterator>
-#include <ctime>
 
 
 using namespace std;
@@ -25,6 +24,7 @@ struct Spy
 {
 	string name;
 	unsigned timeInQue;
+	unsigned timeForOqular;
 	Spy *prev;
 	Spy *next;
 };
@@ -37,15 +37,14 @@ struct Que
 	Spy *curr;
 };
 
+static const int ARGUMENTS_COUNT = 2;
 
-static const unsigned TIME_FOR_OQULAR = 2;
-static const unsigned TIME_SPY_MAX = 10;
-
-void AddQ(Que *spysQue, const string spyName)
+void AddQ(Que *spysQue, const string spyName, const unsigned &timeFor, const unsigned &timeQue)
 {
 	Spy *spy = new Spy;
 	spy->name = spyName;
-	spy->timeInQue = rand() % (TIME_SPY_MAX - 1) + TIME_FOR_OQULAR;
+	spy->timeForOqular = timeFor;
+	spy->timeInQue = timeQue;
 
 	if (spysQue->begQue != nullptr)
 	{
@@ -63,15 +62,17 @@ void AddQ(Que *spysQue, const string spyName)
 	spy->next = nullptr;
 }
 
-void DeleteQ(Que *spysQue, const unsigned &timeSpy, unsigned timeSpyForOqular)
+void DeleteQ(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyForOqular)
 {
+	cout << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
 	spysQue->curr = spysQue->begQue;
+
+
 	while (spysQue->curr != nullptr)
 	{
 		if (spysQue->curr->timeInQue == timeSpy)
 		{
 			cout << "Шпион " << spysQue->curr->name << " ушел из очереди" << endl;
-			timeSpyForOqular = 0;
 			if (spysQue->begQue == spysQue->endQue)
 			{
 				delete(spysQue->begQue);
@@ -85,6 +86,7 @@ void DeleteQ(Que *spysQue, const unsigned &timeSpy, unsigned timeSpyForOqular)
 				delete(spysQue->begQue->prev);
 				spysQue->begQue->prev = nullptr;
 				spysQue->curr = spysQue->begQue;
+				timeSpyForOqular = 0;
 			}
 			else if (spysQue->curr == spysQue->endQue)
 			{
@@ -102,23 +104,84 @@ void DeleteQ(Que *spysQue, const unsigned &timeSpy, unsigned timeSpyForOqular)
 				delete(tmp);
 			}
 		}
-		if (spysQue->curr == spysQue->endQue)
+		
+			else if (spysQue->curr != nullptr)
+			{
+				spysQue->curr = spysQue->curr->next;
+			}
+		
+	}
+}
+
+bool IsValidNumOfArguments(int argc)
+{
+	return (argc == ARGUMENTS_COUNT);
+}
+
+
+bool IsValidInputFile(char * argv[], ifstream &input)
+{
+	if (!input.is_open())
+	{
+		cout << "Failed to open " << argv[1] << " for reading\n";
+		return  false;
+	}
+	if (input.peek() == ifstream::traits_type::eof())
+	{
+		cout << "Empty file " << argv[1] << "\n";
+		return false;
+	}
+	return true;
+}
+
+void CreateQ(Que *spysQue, ifstream &input)
+{
+	string spyName;
+	unsigned timeFor;
+	unsigned timeQue;
+	while (input >> spyName)
+	{
+		input >> timeFor;
+		input >> timeQue;
+		if (timeFor > 0 && timeQue > 0)
 		{
-			spysQue->curr = nullptr;
+			AddQ(spysQue, spyName, timeFor, timeQue);
 		}
-		else if (spysQue->curr != nullptr)
+	}
+}
+
+void OutputResults(Que *spysQue)
+{
+	for (unsigned timeSpy = 1, timeSpyForOqular = 1; (spysQue->begQue != nullptr); ++timeSpy, ++timeSpyForOqular)
+	{
+		cout << "Текущее время: " << timeSpy << endl;
+		spysQue->curr = spysQue->begQue;
+
+		if ((spysQue->curr->timeForOqular == timeSpyForOqular) && (spysQue->begQue != spysQue->endQue))
 		{
-			spysQue->curr = spysQue->curr->next;
+			spysQue->curr = spysQue->begQue;
+			cout << "Шпион " << spysQue->curr->name;
+			cout << " ушел в конец очереди" << endl;
+			spysQue->begQue = spysQue->curr->next;
+			spysQue->curr->prev = spysQue->endQue;
+			spysQue->curr->next = nullptr;
+			spysQue->endQue->next = spysQue->curr;
+			spysQue->endQue = spysQue->curr;
+			spysQue->begQue->prev = nullptr;
+			timeSpyForOqular = 0;
 		}
+
+		DeleteQ(spysQue, timeSpy, timeSpyForOqular);
+
+		cout << endl;
 	}
 }
 
 int main(int argc, char * argv[])
 {
 	setlocale(LC_ALL, "");
-	static const int maxNumberOfArgument = 2;
 
-	if (argc != maxNumberOfArgument)
+	if (!IsValidNumOfArguments(argc))
 	{
 		cout << "Invalid arguments count\n"
 			<< "Usage: laba2.exe <input file> \n";
@@ -126,10 +189,8 @@ int main(int argc, char * argv[])
 	}  
 
 	ifstream input(argv[1]);
-
-	if (!input.is_open())
+	if (!IsValidInputFile(argv, input))
 	{
-		cout << "Failed to open " << argv[1] << " for reading\n";
 		return EXIT_FAILURE;
 	}
 
@@ -138,38 +199,9 @@ int main(int argc, char * argv[])
 	spysQue->endQue = nullptr;
 	spysQue->curr = nullptr;
 
+	CreateQ(spysQue, input);
 
-	
-	srand(unsigned(time(NULL)));
-	string spyName;
-	while (input >> spyName)
-	{
-		AddQ(spysQue, spyName);
+	OutputResults(spysQue);
 
-	}
-	unsigned timeSpyForOqular = 0;
-	for (unsigned timeSpy = 1; ((timeSpy <= TIME_SPY_MAX) && spysQue->begQue != nullptr); ++timeSpy, ++timeSpyForOqular)
-	{
-		cout << "Текущее время: " << timeSpy << endl;
-		if ((timeSpyForOqular % TIME_FOR_OQULAR == 0) && (timeSpyForOqular != 0) && (spysQue->begQue != spysQue->endQue))
-		{
-			spysQue->curr = spysQue->begQue;
-			cout << "Шпион " << spysQue->begQue->name;
-			cout << " ушел в конец очереди" << endl;
-			spysQue->begQue = spysQue->curr->next;
-			spysQue->curr->prev = spysQue->endQue;
-			spysQue->curr->next = nullptr;
-			spysQue->endQue->next = spysQue->curr;
-			spysQue->endQue = spysQue->curr;        
-			spysQue->begQue->prev = nullptr;
-			timeSpyForOqular = 0;
-		}
-		cout << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
-		
-		DeleteQ(spysQue, timeSpy, timeSpyForOqular);
-		
-	    cout << endl;
-	}
-	
     return EXIT_SUCCESS;
 }

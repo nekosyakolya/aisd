@@ -1,3 +1,11 @@
-VASYA
-LENA
-LEXA
+LEXA 2 2
+Mara 2 2
+lera 5 3
+katya 4 1
+mala 5 7
+
+
+
+
+
+
