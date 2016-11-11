@@ -1,0 +1,11 @@
+VASYA 3 10
+LENA 2 7
+LEXA 4 5
+KATE 5 5
+Mara 0 2
+
+
+
+
+
+
