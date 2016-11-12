@@ -9,7 +9,7 @@ bool IsValidNumOfArguments(int argc)
 }
 
 
-bool IsValidInputFile(char * argv[], ifstream &input)
+bool AreValidInputAndOutputFiles(char * argv[], ifstream &input, ofstream & output)
 {
 	if (!input.is_open())
 	{
@@ -19,6 +19,11 @@ bool IsValidInputFile(char * argv[], ifstream &input)
 	if (input.peek() == ifstream::traits_type::eof())
 	{
 		cout << "Empty file " << argv[1] << "\n";
+		return false;
+	}
+	if (!output.is_open())
+	{
+		cout << "Failed to open " << argv[2] << " for writing" << "\n";
 		return false;
 	}
 	return true;

@@ -24,4 +24,4 @@ struct Que
 
 
 void CreateQue(Que *spysQue, std::ifstream &input);
-void OutputProtocol(Que *spysQue);
+void OutputProtocol(Que *spysQue, std::ofstream &output);

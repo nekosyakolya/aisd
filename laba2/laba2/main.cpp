@@ -28,7 +28,9 @@ int main(int argc, char * argv[])
 	}  
 
 	ifstream input(argv[1]);
-	if (!IsValidInputFile(argv, input))
+
+	ofstream output(argv[2]);
+	if (!AreValidInputAndOutputFiles(argv, input, output))
 	{
 		return EXIT_FAILURE;
 	}
@@ -40,7 +42,7 @@ int main(int argc, char * argv[])
 
 	CreateQue(spysQue, input);
 
-	OutputProtocol(spysQue);
+	OutputProtocol(spysQue, output);
 
     return EXIT_SUCCESS;
 }

@@ -2,8 +2,8 @@
 
 #include <iostream> 
 #include <fstream>
-static const int ARGUMENTS_COUNT = 2;
+static const int ARGUMENTS_COUNT = 3;
 
 bool IsValidNumOfArguments(int argc);
 
-bool IsValidInputFile(char * argv[], std::ifstream &input);
+bool AreValidInputAndOutputFiles(char * argv[], std::ifstream &input, std::ofstream &output);

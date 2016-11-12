@@ -1,8 +1,12 @@
-LEXA 2 2
-Mara 2 2
-lera 5 3
-katya 4 1
-mala 5 7
+LEXA 3 20
+Denis 5 38
+Lera 10 15
+Katya 10 30
+
+
+
+
+
 
 
 

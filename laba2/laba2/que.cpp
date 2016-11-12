@@ -26,9 +26,8 @@ void AddQue(Que *spysQue, const string spyName, const unsigned &timeObservation,
 	spy->next = nullptr;
 }
 
-void ControlQueueTime(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyForOqular)
+void ControlQueueTime(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyForOqular, ofstream &output, bool &wasChanges)
 {
-	cout << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
 	spysQue->curr = spysQue->begQue;
 
 
@@ -36,7 +35,11 @@ void ControlQueueTime(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyFo
 	{
 		if (spysQue->curr->timeInQue == timeSpy)
 		{
-			cout << "Шпион " << spysQue->curr->name << " ушел из очереди" << endl;
+			if (!wasChanges)
+			{
+				output << "Текущее время: " << timeSpy << endl;
+			}
+			output << "Шпион " << spysQue->curr->name << " ушел из очереди" << endl;
 			if (spysQue->begQue == spysQue->endQue)
 			{
 				delete(spysQue->begQue);
@@ -47,6 +50,7 @@ void ControlQueueTime(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyFo
 			else if (spysQue->curr == spysQue->begQue)
 			{
 				spysQue->begQue = spysQue->begQue->next;
+				output << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
 				delete(spysQue->begQue->prev);
 				spysQue->begQue->prev = nullptr;
 				spysQue->curr = spysQue->begQue;
@@ -98,15 +102,20 @@ void CreateQue(Que *spysQue, ifstream &input)
 	}
 }
 
-void ControlObservationTime(Que *spysQue, unsigned &timeSpyForOqular)
+void ControlObservationTime(Que *spysQue, const unsigned &timeSpy, unsigned &timeSpyForOqular, ofstream &output, bool &wasChanges)
 {
 	spysQue->curr = spysQue->begQue;
 
 	if ((spysQue->curr->timeForOqular == timeSpyForOqular) && (spysQue->begQue != spysQue->endQue))
 	{
-		cout << "Шпион " << spysQue->curr->name;
-		cout << " ушел в конец очереди" << endl;
+		wasChanges = true;
+		output << "Текущее время: " << timeSpy << endl;
+		output << "Шпион " << spysQue->curr->name;
+		output << " ушел в конец очереди" << endl;
 		spysQue->begQue = spysQue->curr->next;
+
+		output << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
+
 		spysQue->curr->prev = spysQue->endQue;
 		spysQue->curr->next = nullptr;
 		spysQue->endQue->next = spysQue->curr;
@@ -116,15 +125,16 @@ void ControlObservationTime(Que *spysQue, unsigned &timeSpyForOqular)
 	}
 }
 
-void OutputProtocol(Que *spysQue)
+void OutputProtocol(Que *spysQue, ofstream &output)
 {
-	for (unsigned timeSpy = 1, timeSpyForOqular = 1; (spysQue->begQue != nullptr); ++timeSpy, ++timeSpyForOqular)
+	bool wasChanges = false;
+	unsigned timeSpy = 0;
+	output << "Текущее время: " << timeSpy << endl;
+	output << "Шпион " << spysQue->begQue->name << " сейчас смотрит в бинокль" << endl;
+	for (unsigned timeSpyForOqular = 0; (spysQue->begQue != nullptr); ++timeSpy, ++timeSpyForOqular)
 	{
-		cout << "Текущее время: " << timeSpy << endl;
-
-		ControlObservationTime(spysQue, timeSpyForOqular);
-		ControlQueueTime(spysQue, timeSpy, timeSpyForOqular);
-
-		cout << endl;
+		ControlObservationTime(spysQue, timeSpy, timeSpyForOqular, output, wasChanges);
+		ControlQueueTime(spysQue, timeSpy, timeSpyForOqular, output, wasChanges);
+		wasChanges = false;
 	}
 }
