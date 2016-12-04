@@ -73,6 +73,7 @@ void OutputToFile(Node *root, ostream & output)
 void OutputData(Node *tmp)
 {
 	cout << "Элементы: " << endl;
+
 	while (tmp != nullptr)
 	{
 		cout << tmp->name << endl;
@@ -125,6 +126,37 @@ Node *Search(Node ** tmp, bool & isIt)
 	return newNode;
 }
 
+
+
+Node *Create(Node **tmp)
+{
+	string newName = "";
+	cout << "Введите название" << endl;
+	cin >> newName;
+	string value = "";
+	cout << "Если это файл,введите +.иначе -" << endl;
+	cin >> value;
+
+	bool isFile = (value == "+") ? true : false;
+	Node *newNode = new Node;
+	newNode->name = newName;
+	newNode->isFile = isFile;
+	newNode->left = nullptr;
+	newNode->right = nullptr;
+	newNode->father = (*tmp)->father;
+
+
+
+	newNode->level = (*tmp)->level;
+
+	while ((*tmp)->right != nullptr)
+	{
+		*tmp = (*tmp)->right;
+	}
+	(*tmp)->right = newNode;
+
+	return newNode->father->left;
+}
 
 int main(int argc, char * argv[])
 {
@@ -241,6 +273,7 @@ int main(int argc, char * argv[])
 		userAnswer = "";
 		cout << "Введите 1 для открытия " << endl;
 		cout << "Введите 2 для закрытия " << endl;
+		cout << "Введите 3 для создания новой папки в текущей директории" << endl;
 		cout << "Введите 4 чтобы переименовать текущий файл(папку)" << endl;
 		cin >> userAnswer;
 		if (userAnswer == "1")
@@ -294,10 +327,53 @@ int main(int argc, char * argv[])
 			}
 			cout << "Новое название: " << newName << endl;
 		}
+
+		if (userAnswer == "3")
+		{
+			if (!isOpen && tmp->isFile)
+			{
+
+				cout <<"NO, FUCK YOU" << endl;
+			}
+			else if (!isOpen)
+			{
+				//добавляем в пустую папку
+
+
+				string newName = "";
+				string newvalue = "";
+				cout << "Введите название" << endl;
+				cin >> newName;
+				cout << "Если это файл,введите +.иначе -" << endl;
+				cin >> newvalue;
+
+				bool isFile = (newvalue == "+") ? true : false;
+				Node *newNode = new Node;
+				newNode->name = newName;
+				newNode->isFile = isFile;
+				newNode->left = nullptr;
+				newNode->right = nullptr;
+				newNode->father = tmp;
+
+				newNode->level = tmp->level + 1;
+
+				tmp->left = newNode;
+				tmp = tmp->left;
+				isOpen = true;
+
+			}
+			else
+			{
+				
+				tmp = Create(&tmp);
+			}
+
+		}
+
 		isIt = true;
 	}
 
-	OutputToFile(root, output);  //пока в cout
+	OutputToFile(root, output);
 	return 0;
 }
 
