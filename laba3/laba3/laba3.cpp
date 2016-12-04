@@ -17,7 +17,7 @@ struct Node
 	Node *right;
 	Node *father;
 	size_t level;
-	bool isLastSon;
+	bool isFile;
 };
 
 
@@ -48,7 +48,7 @@ bool AreValidInputAndOutputFiles(char * argv[], ifstream &input, ofstream & outp
 }
 
 
-void OutputToFile(Node *root)
+void OutputToFile(Node *root, ostream & output)
 {
 	string result;
 	if (root != nullptr)
@@ -58,15 +58,77 @@ void OutputToFile(Node *root)
 		{
 			result += ".";
 		}
-		cout << result << root->name << endl;
-		OutputToFile(root->left);
-		OutputToFile(root->right);
+		if (root->isFile)
+		{
+			result += "*";
+		}
+		output << result << root->name << endl;
+		OutputToFile(root->left, output);
+		OutputToFile(root->right, output);
 	}
 
 }
 
+
+void OutputData(Node *tmp)
+{
+	cout << "Элементы: " << endl;
+	while (tmp != nullptr)
+	{
+		cout << tmp->name << endl;
+		tmp = tmp->right;
+	}
+}
+
+
+Node *Open(Node **tmp, bool & isIt)
+{
+	Node *newNode = new Node;
+	newNode = *tmp;
+	*tmp = (*tmp)->left;
+
+	if (newNode->isFile)
+	{
+		cout << "Это файл" << endl;
+		isIt = false;
+	}
+	else if (*tmp == nullptr)
+	{
+		cout << "Папка пуста" << endl;
+		isIt = false;
+	}
+	else
+	{
+		newNode = *tmp;
+	}
+	return newNode;
+}
+
+
+Node *Search(Node ** tmp, bool & isIt)
+{
+
+	Node *newNode = new Node;
+	newNode = *tmp;
+	string name = "";
+	cin >> name;
+	while (*tmp != nullptr)
+	{
+		if ((*tmp)->name == name)
+		{
+			return *tmp;
+		}
+		
+		*tmp = (*tmp)->right;
+	}
+	isIt = false;
+	return newNode;
+}
+
+
 int main(int argc, char * argv[])
 {
+	setlocale(LC_ALL, "");
 	if (!IsValidNumOfArguments(argc))
 	{
 		cout << "Invalid arguments count\n"
@@ -86,7 +148,7 @@ int main(int argc, char * argv[])
 	Node *root = new Node;
 	getline(input, root->name);
 	root->level = 0;
-	root->isLastSon = true;
+	root->isFile = false;
 	root->father = nullptr;
 	root->left = nullptr;
 	root->right = nullptr;
@@ -110,7 +172,16 @@ int main(int argc, char * argv[])
 		{
 			++k;
 		}
-		newNode->name = value.substr(k);
+		newNode->isFile = false;
+		if (value[k] == '*')
+		{
+			newNode->isFile = true;
+			newNode->name = value.substr(k + 1);
+		}
+		else
+		{
+			newNode->name = value.substr(k);
+		}
 		
 		newNode->left = nullptr;
 		newNode->right = nullptr;
@@ -120,14 +191,11 @@ int main(int argc, char * argv[])
 		{
 			tmp->left = newNode;
 			newNode->father = tmp;
-			newNode->isLastSon = true;
 		}
 		else if (k == level)
 		{
 			tmp->right = newNode;
 			newNode->father = tmp->father;
-			tmp->isLastSon = false;
-			newNode->isLastSon = true;
 		}
 		else
 		{
@@ -138,13 +206,101 @@ int main(int argc, char * argv[])
 			}
 			newNode->father = p->father;
 			p->right = newNode;
-			p->isLastSon = false;
-			newNode->isLastSon = true;
 		}
 		level = k;
 		tmp = newNode;
 	}
-	OutputToFile(root);
+
+	
+	tmp = root;
+	bool isIt = true;
+	bool isOpen = true;
+
+	string userAnswer;
+	while (!cin.eof())
+	{
+
+		
+		cout << "Вы находитесь в: ";
+		if (isOpen && tmp->father != nullptr)
+		{
+			cout << tmp->father->name;
+		}
+		else
+		{
+			cout << tmp->name;
+		}
+		cout << endl;
+		
+		if (isOpen)
+		{
+			OutputData(tmp);
+		}
+		
+
+		userAnswer = "";
+		cout << "Введите 1 для открытия " << endl;
+		cout << "Введите 2 для закрытия " << endl;
+		cout << "Введите 4 чтобы переименовать текущий файл(папку)" << endl;
+		cin >> userAnswer;
+		if (userAnswer == "1")
+		{
+			if (tmp->right != nullptr && isOpen)
+			{
+				cout << "Введите имя файла или папки для открытия" << endl;
+				tmp = Search(&tmp, isIt);
+				if (!isIt)
+				{
+					cout << "Такой папки или файла нет в природе" << endl;
+				}
+			}
+			isOpen = true;
+			if (tmp != nullptr  && isIt)
+			{
+				tmp = Open(&tmp, isOpen);
+			}
+
+		}
+		if (userAnswer == "2")
+		{
+			if (tmp->father == nullptr || (tmp->father->father == nullptr && tmp->left != nullptr))
+			{
+				tmp = root;
+			}
+			else if (tmp->left == nullptr && !isOpen)
+			{
+				tmp = tmp->father->left;
+			}
+			else
+			{
+				tmp = tmp->father->father->left;
+			}
+
+			isOpen = true;
+		}
+		if (userAnswer == "4")
+		{
+			string newName = "";
+			cout << "Введите новое название" << endl;
+			cin >> newName;
+			if (tmp == root || !isOpen)
+			{
+				tmp->name = newName;
+				
+			}
+			else if (tmp != nullptr)
+			{
+				tmp->father->name = newName;
+			}
+			cout << "Новое название: " << newName << endl;
+		}
+		isIt = true;
+	}
+
+	OutputToFile(root, output);  //пока в cout
 	return 0;
 }
+
+
+
 
