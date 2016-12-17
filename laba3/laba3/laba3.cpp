@@ -1,10 +1,20 @@
-// laba3.cpp: определяет точку входа для консольного приложения.
-//
+
+//21. Информация  о  файлах  на  жестких  дисках   компьютера
+//записана  с  помощью  дерева.Обеспечить выполнение следующих
+//операций :
+//1) загрузку дерева в память из файла;
+//2) обход дерева папок в  режиме  диалога(раскрыиме папок,
+//подъем на уровень и т.п.);
+//3) корректировку  дерева при создании новых папок и файлов,
+//их переименовании, копировании, переносе и удалении.
+//4) сохранение дерева в файле(13).
 
 #include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "windows.h"
+#include <conio.h>
 
 static const int ARGUMENTS_COUNT = 3;
 
@@ -70,10 +80,40 @@ void OutputToFile(Node *root, ostream & output)
 }
 
 
+void Delete(Node **root)
+{
+	
+	if (*root != nullptr)
+	{
+		Delete(&(*root)->left);
+		Delete(&(*root)->right);
+		delete (*root);
+		(*root)->right = nullptr;
+		(*root)->left = nullptr;
+		(*root)->father = nullptr;
+		*root = nullptr;
+	}
+
+}
+
+void RecalculationLevel(Node **root)
+{
+
+	if (*root != nullptr)
+	{
+
+		(*root)->level = (*root)->father->level + 1;
+		RecalculationLevel(&(*root)->left);
+		RecalculationLevel(&(*root)->right);
+	}
+
+}
+
+
 void OutputData(Node *tmp)
 {
 	cout << "Элементы: " << endl;
-
+	cout << "* ";
 	while (tmp != nullptr)
 	{
 		cout << tmp->name << endl;
@@ -128,24 +168,18 @@ Node *Search(Node ** tmp, bool & isIt)
 
 
 
-Node *Create(Node **tmp)
+Node *Create(Node **tmp, const bool& isFile)
 {
 	string newName = "";
 	cout << "Введите название" << endl;
 	cin >> newName;
-	string value = "";
-	cout << "Если это файл,введите +.иначе -" << endl;
-	cin >> value;
 
-	bool isFile = (value == "+") ? true : false;
 	Node *newNode = new Node;
 	newNode->name = newName;
 	newNode->isFile = isFile;
 	newNode->left = nullptr;
 	newNode->right = nullptr;
 	newNode->father = (*tmp)->father;
-
-
 
 	newNode->level = (*tmp)->level;
 
@@ -158,39 +192,75 @@ Node *Create(Node **tmp)
 	return newNode->father->left;
 }
 
-int main(int argc, char * argv[])
+
+
+Node *CopyElement(Node *tmp)
 {
-	setlocale(LC_ALL, "");
-	if (!IsValidNumOfArguments(argc))
+
+	if (tmp == nullptr)
 	{
-		cout << "Invalid arguments count\n"
-			<< "Usage: laba3.exe <input file> <output file>\n";
-		return EXIT_FAILURE;
+		return nullptr;
 	}
 
-	ifstream input(argv[1]);
+	Node *newNode = new Node;
+	newNode->father = tmp->father;
+	newNode->name = tmp->name;
+	newNode->level = tmp->level;
+	newNode->isFile = tmp->isFile;
 
-	ofstream output(argv[2]);
-	if (!AreValidInputAndOutputFiles(argv, input, output))
+	newNode->left = CopyElement(tmp->left);
+	newNode->right = CopyElement(tmp->right);
+	return newNode;
+}
+
+
+void AddNewElement(Node **tmp, bool &isOpen, const bool& isFile)
+{
+	if (!isOpen && (*tmp)->isFile)
 	{
-		return EXIT_FAILURE;
+
+		cout << "Вы не можете добавить элемент в файл" << endl;
+	}
+	else if (!isOpen)
+	{
+		string newName = "";
+		cout << "Введите название" << endl;
+		cin >> newName;
+		Node *newNode = new Node;
+		newNode->name = newName;
+		newNode->isFile = isFile;
+		newNode->left = nullptr;
+		newNode->right = nullptr;
+		newNode->father = *tmp;
+
+		newNode->level = (*tmp)->level + 1;
+
+		(*tmp)->left = newNode;
+		*tmp = (*tmp)->left;
+		isOpen = true;
+
+	}
+	else
+	{
+
+		*tmp = Create(tmp, isFile);
 	}
 
+}
 
-	Node *root = new Node;
-	getline(input, root->name);
-	root->level = 0;
-	root->isFile = false;
-	root->father = nullptr;
-	root->left = nullptr;
-	root->right = nullptr;
 
+void ReadTree(Node **root, istream & input)
+{
+	getline(input, (*root)->name);
+	(*root)->level = 0;
+	(*root)->isFile = false;
+	(*root)->father = nullptr;
+	(*root)->left = nullptr;
+	(*root)->right = nullptr;
 	size_t level = 0;
-
 	size_t k;
-
 	Node *tmp = new Node;
-	tmp = root;
+	tmp = *root;
 	string value;
 	Node *p = new Node;
 
@@ -214,7 +284,7 @@ int main(int argc, char * argv[])
 		{
 			newNode->name = value.substr(k);
 		}
-		
+
 		newNode->left = nullptr;
 		newNode->right = nullptr;
 		newNode->level = k;
@@ -242,139 +312,482 @@ int main(int argc, char * argv[])
 		level = k;
 		tmp = newNode;
 	}
+}
 
-	
-	tmp = root;
-	bool isIt = true;
-	bool isOpen = true;
 
-	string userAnswer;
-	while (!cin.eof())
+void OutputMenu()
+{
+	cout << "Нажмите Enter для открытия " << endl
+	<< "Нажмите Esc для закрытия " << endl
+	<< "Нажмите + для создания нового файла в текущей директории" << endl
+	<< "Нажмите * для создания новой папки в текущей директории" << endl
+	<< "Нажмите 1 чтобы переименовать текущий файл(папку)" << endl
+	<< "Нажмите Delete чтобы удалить текущий файл(папку)" << endl
+	<< "Нажмите Backspace чтобы переместить текущий файл(папку)" << endl
+	<< "Нажмите Insert чтобы вставить файл(папку)в текущую директорию" << endl
+	<< "Нажмите Tab чтобы скопировать текущий файл(папку)" << endl;
+}
+
+
+void OutputInfo(Node **tmp, const bool & isOpen)
+{
+	cout << "Вы находитесь в: ";
+	if (isOpen && (*tmp)->father != nullptr)
 	{
+		cout << (*tmp)->father->name;
+	}
+	else
+	{
+		cout << (*tmp)->name;
+	}
+	cout << endl;
+	if (isOpen)
+	{
+		OutputData(*tmp);
+	}
+}
 
-		
-		cout << "Вы находитесь в: ";
-		if (isOpen && tmp->father != nullptr)
+void OpenData(Node **tmp, bool & isOpen, bool & isIt)
+{
+	/*if ((*tmp)->right != nullptr && isOpen)
+	{
+		cout << "Введите имя файла или папки для открытия" << endl;
+		*tmp = Search(tmp, isIt);
+		if (!isIt)
 		{
-			cout << tmp->father->name;
+			cout << "Такой папки или файла нет в природе" << endl;
+		}
+	}*/
+	isOpen = true;
+	if (tmp != nullptr  && isIt)
+	{
+		*tmp = Open(tmp, isOpen);
+	}
+}
+
+
+void CloseData(Node **tmp, bool & isOpen, Node **root)
+{
+	if ((*tmp)->father == nullptr || ((*tmp)->father->father == nullptr && (*tmp)->left != nullptr))
+	{
+		*tmp = *root;
+	}
+	else if ((*tmp)->left == nullptr && !isOpen)
+	{
+		*tmp = (*tmp)->father->left;
+	}
+	else
+	{
+		*tmp = (*tmp)->father->father->left;
+	}
+
+	isOpen = true;
+}
+
+
+
+void DeleteThisElement(Node **tmp, bool & isOpen)
+{
+	Node *p = new Node;
+	if (!isOpen)
+	{
+		if ((*tmp)->father->left == *tmp)
+		{
+			(*tmp)->father->left = (*tmp)->right;
+
+			p = ((*tmp)->right == nullptr) ? (*tmp)->father : (*tmp)->right;
+
+			delete (*tmp);
+			(*tmp)->left = nullptr;
+			(*tmp)->right = nullptr;
+			(*tmp)->father = nullptr;
+
+			*tmp = p;
 		}
 		else
 		{
-			cout << tmp->name;
+			//не первый элемент
+
+			p = *tmp;
+			*tmp = (*tmp)->father->left;
+			while ((*tmp)->right != p)
+			{
+				*tmp = (*tmp)->right;
+			}
+			(*tmp)->right = (*tmp)->right->right;
+
+			delete (p);
+
+			p->right = nullptr;
+			p->father = nullptr;
+			p->left = nullptr;
+
+			*tmp = ((*tmp)->father->left == nullptr) ? (*tmp)->father : (*tmp)->father->left;
 		}
-		cout << endl;
-		
-		if (isOpen)
+
+	}
+	else
+	{
+
+		if ((*tmp)->father == (*tmp)->father->father->left)
 		{
-			OutputData(tmp);
+
+			// это если папка не пуста
+			*tmp = (*tmp)->father;
+			Delete(&(*tmp)->left);
+
+			(*tmp)->father->left = (*tmp)->right;
+			p = ((*tmp)->right == nullptr) ? (*tmp)->father : (*tmp)->right;
+
+			delete (*tmp);
+			(*tmp)->right = nullptr;
+			(*tmp)->father = nullptr;
+			(*tmp)->left = nullptr;
+
+			*tmp = p;
 		}
+		else
+		{
+			//не первый элемент
+			// это если папка не пуста
+
+			*tmp = (*tmp)->father;
+			Delete(&(*tmp)->left);
+
+			p = *tmp;
+
+
+			*tmp = (*tmp)->father->left;
+			while ((*tmp)->right != p)
+			{
+				*tmp = (*tmp)->right;
+			}
+			(*tmp)->right = (*tmp)->right->right;
+
+			delete (p);
+
+			p->right = nullptr;
+			p->father = nullptr;
+			p->left = nullptr;
+			*tmp = ((*tmp)->father->left == nullptr) ? (*tmp)->father : (*tmp)->father->left;
+
+		}
+	}
+	isOpen = true;
+}
+
+
+
+void RenameElement(Node **tmp, Node **root, bool & isOpen)
+{
+	string newName = "";
+	cout << "Введите новое название" << endl;
+	cin >> newName;
+	if (*tmp == *root || !isOpen)
+	{
+		(*tmp)->name = newName;
+
+	}
+	else if (tmp != nullptr)
+	{
+		(*tmp)->father->name = newName;
+	}
+	cout << "Новое название: " << newName << endl;
+}
+
+int main(int argc, char * argv[])
+{
+	setlocale(LC_ALL, "");
+	if (!IsValidNumOfArguments(argc))
+	{
+		cout << "Invalid arguments count\n"
+			<< "Usage: laba3.exe <input file> <output file>\n";
+		return EXIT_FAILURE;
+	}
+
+	ifstream input(argv[1]);
+
+	ofstream output(argv[2]);
+	if (!AreValidInputAndOutputFiles(argv, input, output))
+	{
+		return EXIT_FAILURE;
+	}
+
+
+	Node *root = new Node;
+	
+	ReadTree(&root, input);
+
+	Node *node = new Node;
+	Node *p = new Node;
+	Node *tmp = new Node;
+
+	tmp = root;
+	bool isIt = true;
+	bool isOpen = true;
+	bool isBegin = true;
+
+	int userAnswer;
+	do
+	{
+
+
+		if (isBegin)
+		{
+			if (tmp->father != nullptr && isOpen)
+			{
+				tmp = tmp->father->left;
+			}
+			OutputInfo(&tmp, isOpen);
+			cout << "Нажмите пробел для справки" << endl;
+		}
+
 		
 
-		userAnswer = "";
-		cout << "Введите 1 для открытия " << endl;
-		cout << "Введите 2 для закрытия " << endl;
-		cout << "Введите 3 для создания новой папки в текущей директории" << endl;
-		cout << "Введите 4 чтобы переименовать текущий файл(папку)" << endl;
-		cin >> userAnswer;
-		if (userAnswer == "1")
+		userAnswer = _getch();
+		switch (userAnswer)
 		{
-			if (tmp->right != nullptr && isOpen)
+		case 13:
+			OpenData(&tmp, isOpen, isIt);
+			isBegin = true;
+			break;
+		case 27:
+			CloseData(&tmp, isOpen, &root);
+			isBegin = true;
+			break;
+		case 32:
+			OutputMenu();
+			break;
+		case 43:
+			AddNewElement(&tmp, isOpen, true);
+			isBegin = true;
+			break;
+		case 42://*
+			AddNewElement(&tmp, isOpen, false);
+			isBegin = true;
+			break;
+		case 83:
+			if (tmp == root || (tmp->father == root && isOpen))
 			{
-				cout << "Введите имя файла или папки для открытия" << endl;
-				tmp = Search(&tmp, isIt);
-				if (!isIt)
+				Delete(&root);
+			}
+			else
+			{
+				DeleteThisElement(&tmp, isOpen);
+			}
+			isBegin = true;
+			break;
+		case 49://1
+			RenameElement(&tmp, &root, isOpen);
+			isBegin = true;
+			break;
+		case 8://переместиь backspace
+			if (tmp == root || (tmp->father == root && isOpen))
+			{
+				//выводить,что нельзя переместить
+				////Delete(&tmp);
+				//Delete(&root);
+				//break;
+			}
+			else if (!isOpen)
+			{
+				node = tmp;
+				if (tmp->father->left == tmp)
 				{
-					cout << "Такой папки или файла нет в природе" << endl;
+					tmp->father->left = tmp->right;
+
+					p = (tmp->right == nullptr) ? tmp->father : tmp->right;
+					tmp = p;
+				}
+				else
+				{
+					p = tmp;
+
+					tmp = tmp->father->left;
+					while (tmp->right != p)
+					{
+						tmp = tmp->right;
+					}
+
+					tmp->right = tmp->right->right;
+
+					tmp = (tmp->father->left == nullptr) ? tmp->father : tmp->father->left;
+				}
+
+			}
+			else
+			{
+
+				node = tmp->father;
+				if (tmp->father == tmp->father->father->left)
+				{
+
+					// это если папка не пуста
+					tmp = tmp->father;
+
+					tmp->father->left = tmp->right;
+					p = (tmp->right == nullptr) ? tmp->father : tmp->right;
+
+					tmp = p;
+				}
+				else
+				{
+					//не первый элемент
+					// это если папка не пуста
+
+					tmp = tmp->father;
+
+					p = tmp;
+
+
+					tmp = tmp->father->left;
+					while (tmp->right != p)
+					{
+						tmp = tmp->right;
+					}
+
+					tmp->right = tmp->right->right;
+
+					tmp = (tmp->father->left == nullptr) ? tmp->father : tmp->father->left;
+
 				}
 			}
 			isOpen = true;
-			if (tmp != nullptr  && isIt)
+			isBegin = true;
+			break;
+		case 82://вставить insert
+			if (!isOpen && tmp->isFile)
 			{
-				tmp = Open(&tmp, isOpen);
+
+				cout << "Вы не можете добавить элемент в файл" << endl;
 			}
 
-		}
-		if (userAnswer == "2")
-		{
-			if (tmp->father == nullptr || (tmp->father->father == nullptr && tmp->left != nullptr))
+			else if (!isOpen)
 			{
-				tmp = root;
+				tmp->left = node;
+				node->father = tmp;
+				node->right = nullptr;
+				p = node;
+				RecalculationLevel(&p);
+				tmp = node;
+
 			}
-			else if (tmp->left == nullptr && !isOpen)
+			else
 			{
+				while (tmp->right != nullptr)
+				{
+					tmp = (tmp)->right;
+				}
+				tmp->right = node;
+
+				node->father = tmp->father;
+				node->right = nullptr;
+
+				p = node;
+				RecalculationLevel(&p);
+				tmp = tmp->father->left;
+			}
+			isOpen = true;
+			isBegin = true;
+			break;
+		case 9://copy tab
+			if (tmp == root || (tmp->father == root && isOpen))
+			{
+				node = CopyElement(root);
+			}
+			else if (!isOpen)
+			{
+				node = CopyElement(tmp);
 				tmp = tmp->father->left;
 			}
 			else
 			{
-				tmp = tmp->father->father->left;
+				node = CopyElement(tmp->father);
 			}
-
 			isOpen = true;
+			isBegin = true;
+			break;
+		case 80:
+			if (tmp->right != nullptr)
+			{
+				cout << "Вы находитесь в: ";
+				if (isOpen && tmp->father != nullptr)
+				{
+					cout << tmp->father->name;
+				}
+				else
+				{
+					cout << tmp->name;
+				}
+				cout << endl;
+
+				cout << "Элементы: " << endl;
+
+				p = tmp->father->left;
+				while (p != nullptr)
+				{
+					if (p == tmp->right)
+					{
+						cout << "* ";
+					}
+
+					cout << p->name << endl;
+					p = p->right;
+				}
+				tmp = tmp->right;
+				if (tmp->left == nullptr)
+				{
+					isOpen = false;
+				}
+				isBegin = false;
+			}
+			break;
+		case 72:
+			if (tmp != tmp->father->left)
+			{
+				cout << "Вы находитесь в: ";
+				if (isOpen && tmp->father != nullptr)
+				{
+					cout << tmp->father->name;
+				}
+				else
+				{
+					cout << tmp->name;
+				}
+				cout << endl;
+
+				cout << "Элементы: " << endl;
+				p = tmp->father->left;
+				while (p != nullptr)
+				{
+					if (p->right == tmp)
+					{
+						cout << "* ";
+						tmp = p;
+					}
+
+					cout << p->name << endl;
+					p = p->right;
+				}
+				//tmp = tmp->right;
+				if (tmp->left == nullptr)
+				{
+					isOpen = false;
+				}
+				isBegin = false;
+			}
+			break;
+		default:
+			break;
 		}
-		if (userAnswer == "4")
-		{
-			string newName = "";
-			cout << "Введите новое название" << endl;
-			cin >> newName;
-			if (tmp == root || !isOpen)
-			{
-				tmp->name = newName;
-				
-			}
-			else if (tmp != nullptr)
-			{
-				tmp->father->name = newName;
-			}
-			cout << "Новое название: " << newName << endl;
-		}
-
-		if (userAnswer == "3")
-		{
-			if (!isOpen && tmp->isFile)
-			{
-
-				cout <<"NO, FUCK YOU" << endl;
-			}
-			else if (!isOpen)
-			{
-				//добавляем в пустую папку
+	}while (userAnswer != 79);
 
 
-				string newName = "";
-				string newvalue = "";
-				cout << "Введите название" << endl;
-				cin >> newName;
-				cout << "Если это файл,введите +.иначе -" << endl;
-				cin >> newvalue;
 
-				bool isFile = (newvalue == "+") ? true : false;
-				Node *newNode = new Node;
-				newNode->name = newName;
-				newNode->isFile = isFile;
-				newNode->left = nullptr;
-				newNode->right = nullptr;
-				newNode->father = tmp;
-
-				newNode->level = tmp->level + 1;
-
-				tmp->left = newNode;
-				tmp = tmp->left;
-				isOpen = true;
-
-			}
-			else
-			{
-				
-				tmp = Create(&tmp);
-			}
-
-		}
-
-		isIt = true;
-	}
+	
 
 	OutputToFile(root, output);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 
