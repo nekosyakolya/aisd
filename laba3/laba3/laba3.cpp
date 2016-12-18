@@ -430,7 +430,15 @@ void DeleteThisElement(Node **tmp, bool & isOpen)
 			(*tmp)->right = nullptr;
 			(*tmp)->father = nullptr;
 
-			*tmp = p;
+			if (p->left == nullptr)
+			{
+				*tmp = p->father->left;
+			}
+			else
+			{
+				*tmp = p;
+			}
+			
 		}
 		else
 		{
@@ -611,6 +619,7 @@ int main(int argc, char * argv[])
 			else
 			{
 				DeleteThisElement(&tmp, isOpen);
+
 			}
 			isBegin = true;
 			break;
@@ -801,37 +810,41 @@ int main(int argc, char * argv[])
 			}
 			break;
 		case 72:
-			if (tmp != tmp->father->left)
+			if (tmp->father != nullptr)
 			{
-				cout << "Вы находитесь в: ";
-				if (tmp->father != nullptr)
+				if (tmp != tmp->father->left)
 				{
-					cout << tmp->father->name << endl;
-				}
-				cout << "Элементы: " << endl;
-				p = tmp->father->left;
-				while (p != nullptr)
-				{
-					if (p->right == tmp)
+					cout << "Вы находитесь в: ";
+					if (tmp->father != nullptr)
 					{
-						cout << "> ";
-						tmp = p;
+						cout << tmp->father->name << endl;
 					}
+					cout << "Элементы: " << endl;
+					p = tmp->father->left;
+					while (p != nullptr)
+					{
+						if (p->right == tmp)
+						{
+							cout << "> ";
+							tmp = p;
+						}
 
-					cout << p->name << endl;
-					p = p->right;
+						cout << p->name << endl;
+						p = p->right;
+					}
+					if (tmp->left == nullptr)
+					{
+						isOpen = false;
+					}
+					isBegin = false;
 				}
-				if (tmp->left == nullptr)
-				{
-					isOpen = false;
-				}
-				isBegin = false;
 			}
 			break;
 		default:
 			break;
 		}
-	}while (userAnswer != 79 && root != nullptr);
+	}
+	while (userAnswer != 79 && root != nullptr);
 
 
 
