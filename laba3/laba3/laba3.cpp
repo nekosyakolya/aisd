@@ -113,7 +113,7 @@ void RecalculationLevel(Node **root)
 void OutputData(Node *tmp)
 {
 	cout << "Элементы: " << endl;
-	cout << "* ";
+	cout << "> ";
 	while (tmp != nullptr)
 	{
 		cout << tmp->name << endl;
@@ -172,29 +172,60 @@ Node *Create(Node **tmp, const bool& isFile)
 {
 	string newName = "";
 	cout << "Введите название" << endl;
-	cin >> newName;
-
-	Node *newNode = new Node;
-	newNode->name = newName;
-	newNode->isFile = isFile;
-	newNode->left = nullptr;
-	newNode->right = nullptr;
-	newNode->father = (*tmp)->father;
-
-	newNode->level = (*tmp)->level;
-
-	while ((*tmp)->right != nullptr)
+	if (getline(cin, newName))
 	{
-		*tmp = (*tmp)->right;
-	}
-	(*tmp)->right = newNode;
+		Node *newNode = new Node;
+		newNode->name = newName;
+		newNode->isFile = isFile;
+		newNode->left = nullptr;
+		newNode->right = nullptr;
+		newNode->father = (*tmp)->father;
 
-	return newNode->father->left;
+		newNode->level = (*tmp)->level;
+
+		while ((*tmp)->right != nullptr)
+		{
+			*tmp = (*tmp)->right;
+		}
+		(*tmp)->right = newNode;
+	}
+	
+	cin.clear();
+	return (*tmp)->father->left;
 }
 
 
 
-Node *CopyElement(Node *tmp)
+//Node *CopyElement(Node **tmp, Node **father)
+//{
+//
+//	if (*tmp == nullptr)
+//	{
+//		return nullptr;
+//	}
+//
+//	Node *newNode = new Node;
+//	Node *newFather = new Node;
+//	newFather->father = (*father)->father;
+//	newFather->name = (*father)->name;
+//	newFather->level = (*father)->level;
+//	newFather->isFile = (*father)->isFile;
+//	newFather->left = (*father)->left;
+//	newFather->right = (*father)->right;
+//
+//	newNode->father = newFather;
+//	newNode->name = (*tmp)->name;
+//	newNode->level = (*tmp)->level;
+//	newNode->isFile = (*tmp)->isFile;
+//
+//	newNode->left = CopyElement(&(*tmp)->left, &newNode);
+//	newNode->right = CopyElement(&(*tmp)->right, &newNode->father);
+//	return newNode;
+//}
+
+
+
+Node *CopyElement(Node *tmp, Node *father)
 {
 
 	if (tmp == nullptr)
@@ -203,15 +234,18 @@ Node *CopyElement(Node *tmp)
 	}
 
 	Node *newNode = new Node;
-	newNode->father = tmp->father;
+	father->left = newNode;
+
+	newNode->father = father;
 	newNode->name = tmp->name;
 	newNode->level = tmp->level;
 	newNode->isFile = tmp->isFile;
 
-	newNode->left = CopyElement(tmp->left);
-	newNode->right = CopyElement(tmp->right);
+	newNode->left = CopyElement(tmp->left, newNode);
+	newNode->right = CopyElement(tmp->right, father);
 	return newNode;
 }
+
 
 
 void AddNewElement(Node **tmp, bool &isOpen, const bool& isFile)
@@ -225,19 +259,22 @@ void AddNewElement(Node **tmp, bool &isOpen, const bool& isFile)
 	{
 		string newName = "";
 		cout << "Введите название" << endl;
-		cin >> newName;
-		Node *newNode = new Node;
-		newNode->name = newName;
-		newNode->isFile = isFile;
-		newNode->left = nullptr;
-		newNode->right = nullptr;
-		newNode->father = *tmp;
+		if (getline(cin, newName))
+		{
+			Node *newNode = new Node;
+			newNode->name = newName;
+			newNode->isFile = isFile;
+			newNode->left = nullptr;
+			newNode->right = nullptr;
+			newNode->father = *tmp;
 
-		newNode->level = (*tmp)->level + 1;
+			newNode->level = (*tmp)->level + 1;
 
-		(*tmp)->left = newNode;
-		*tmp = (*tmp)->left;
-		isOpen = true;
+			(*tmp)->left = newNode;
+			*tmp = (*tmp)->left;
+			isOpen = true;
+		}
+		cin.clear();
 
 	}
 	else
@@ -347,17 +384,8 @@ void OutputInfo(Node **tmp, const bool & isOpen)
 	}
 }
 
-void OpenData(Node **tmp, bool & isOpen, bool & isIt)
+void OpenData(Node **tmp, bool & isOpen, const bool & isIt)
 {
-	/*if ((*tmp)->right != nullptr && isOpen)
-	{
-		cout << "Введите имя файла или папки для открытия" << endl;
-		*tmp = Search(tmp, isIt);
-		if (!isIt)
-		{
-			cout << "Такой папки или файла нет в природе" << endl;
-		}
-	}*/
 	isOpen = true;
 	if (tmp != nullptr  && isIt)
 	{
@@ -482,17 +510,21 @@ void RenameElement(Node **tmp, Node **root, bool & isOpen)
 {
 	string newName = "";
 	cout << "Введите новое название" << endl;
-	cin >> newName;
-	if (*tmp == *root || !isOpen)
+	if (getline(cin, newName))
 	{
-		(*tmp)->name = newName;
+		if (*tmp == *root || !isOpen)
+		{
+			(*tmp)->name = newName;
 
+		}
+		else if (tmp != nullptr)
+		{
+			(*tmp)->father->name = newName;
+		}
+		cout << "Новое название: " << newName << endl;
 	}
-	else if (tmp != nullptr)
-	{
-		(*tmp)->father->name = newName;
-	}
-	cout << "Новое название: " << newName << endl;
+	cin.clear();
+	
 }
 
 int main(int argc, char * argv[])
@@ -522,6 +554,7 @@ int main(int argc, char * argv[])
 	Node *p = new Node;
 	Node *tmp = new Node;
 
+	node = nullptr;
 	tmp = root;
 	bool isIt = true;
 	bool isOpen = true;
@@ -534,12 +567,14 @@ int main(int argc, char * argv[])
 
 		if (isBegin)
 		{
-			if (tmp->father != nullptr && isOpen)
+			p = tmp;
+			if (p->father != nullptr && isOpen)
 			{
-				tmp = tmp->father->left;
+				p = p->father->left;
 			}
-			OutputInfo(&tmp, isOpen);
-			cout << "Нажмите пробел для справки" << endl;
+			OutputInfo(&p, isOpen);
+			cout << "Нажмите End для выхода из программы" << endl;
+			cout << "Нажмите пробел для справки" << endl << endl;
 		}
 
 		
@@ -570,6 +605,8 @@ int main(int argc, char * argv[])
 			if (tmp == root || (tmp->father == root && isOpen))
 			{
 				Delete(&root);
+				root = nullptr;
+				cout << "Вы удалили корень" << endl;
 			}
 			else
 			{
@@ -584,10 +621,7 @@ int main(int argc, char * argv[])
 		case 8://переместиь backspace
 			if (tmp == root || (tmp->father == root && isOpen))
 			{
-				//выводить,что нельзя переместить
-				////Delete(&tmp);
-				//Delete(&root);
-				//break;
+				cout << "Нельзя переместить корень" << endl;
 			}
 			else if (!isOpen)
 			{
@@ -656,71 +690,95 @@ int main(int argc, char * argv[])
 			isBegin = true;
 			break;
 		case 82://вставить insert
-			if (!isOpen && tmp->isFile)
+			if (node != nullptr)
 			{
-
-				cout << "Вы не можете добавить элемент в файл" << endl;
-			}
-
-			else if (!isOpen)
-			{
-				tmp->left = node;
-				node->father = tmp;
-				node->right = nullptr;
-				p = node;
-				RecalculationLevel(&p);
-				tmp = node;
-
-			}
-			else
-			{
-				while (tmp->right != nullptr)
+				if (!isOpen && tmp->isFile)
 				{
-					tmp = (tmp)->right;
+
+					cout << "Вы не можете добавить элемент в файл" << endl;
 				}
-				tmp->right = node;
 
-				node->father = tmp->father;
-				node->right = nullptr;
+				else if (!isOpen)
+				{
+					tmp->left = node;
+					node->father = tmp;
+					node->right = nullptr;
+					node->level = tmp->level + 1;
+					p = tmp->left;
+					RecalculationLevel(&p);
+					tmp = node;
 
-				p = node;
-				RecalculationLevel(&p);
-				tmp = tmp->father->left;
+				}
+				else
+				{
+					while (tmp->right != nullptr)
+					{
+						tmp = (tmp)->right;
+					}
+					tmp->right = node;
+
+					node->father = tmp->father;
+					node->right = nullptr;
+
+					p = node;
+					RecalculationLevel(&p);
+					tmp = tmp->father->left;
+				}
+				isOpen = true;
+				isBegin = true;
 			}
-			isOpen = true;
-			isBegin = true;
 			break;
 		case 9://copy tab
+			p = tmp;
 			if (tmp == root || (tmp->father == root && isOpen))
 			{
-				node = CopyElement(root);
+
+				Node *father = new Node;
+				father->father = nullptr;
+				father->left = nullptr;
+				father->right = nullptr;
+				father->isFile = false;
+				father->level = 0;
+				father->name = "";
+				node = CopyElement(root, father);
 			}
 			else if (!isOpen)
 			{
-				node = CopyElement(tmp);
+
+				Node *father = new Node;
+				father->father = nullptr;
+				father->left = nullptr;
+				father->right = nullptr;
+				father->isFile = false;
+				father->level = 0;
+				father->name = "";
+				node = CopyElement(tmp, father);
 				tmp = tmp->father->left;
 			}
 			else
 			{
-				node = CopyElement(tmp->father);
+
+				Node *father = new Node;
+				father->father = nullptr;
+				father->left = nullptr;
+				father->right = nullptr;
+				father->isFile = false;
+				father->level = 0;
+				father->name = "";
+				node = CopyElement(tmp->father, father);
 			}
-			isOpen = true;
+			tmp = p;
+			//isOpen = true;
 			isBegin = true;
 			break;
 		case 80:
 			if (tmp->right != nullptr)
 			{
 				cout << "Вы находитесь в: ";
-				if (isOpen && tmp->father != nullptr)
+				if (tmp->father != nullptr)
 				{
-					cout << tmp->father->name;
+					cout << tmp->father->name << endl;
 				}
-				else
-				{
-					cout << tmp->name;
-				}
-				cout << endl;
-
 				cout << "Элементы: " << endl;
 
 				p = tmp->father->left;
@@ -728,7 +786,7 @@ int main(int argc, char * argv[])
 				{
 					if (p == tmp->right)
 					{
-						cout << "* ";
+						cout << "> ";
 					}
 
 					cout << p->name << endl;
@@ -746,30 +804,23 @@ int main(int argc, char * argv[])
 			if (tmp != tmp->father->left)
 			{
 				cout << "Вы находитесь в: ";
-				if (isOpen && tmp->father != nullptr)
+				if (tmp->father != nullptr)
 				{
-					cout << tmp->father->name;
+					cout << tmp->father->name << endl;
 				}
-				else
-				{
-					cout << tmp->name;
-				}
-				cout << endl;
-
 				cout << "Элементы: " << endl;
 				p = tmp->father->left;
 				while (p != nullptr)
 				{
 					if (p->right == tmp)
 					{
-						cout << "* ";
+						cout << "> ";
 						tmp = p;
 					}
 
 					cout << p->name << endl;
 					p = p->right;
 				}
-				//tmp = tmp->right;
 				if (tmp->left == nullptr)
 				{
 					isOpen = false;
@@ -780,7 +831,7 @@ int main(int argc, char * argv[])
 		default:
 			break;
 		}
-	}while (userAnswer != 79);
+	}while (userAnswer != 79 && root != nullptr);
 
 
 
