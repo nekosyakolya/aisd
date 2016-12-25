@@ -1,4 +1,3 @@
-
 //21. Информация  о  файлах  на  жестких  дисках   компьютера
 //записана  с  помощью  дерева.Обеспечить выполнение следующих
 //операций :
@@ -335,9 +334,6 @@ int main(int argc, char * argv[])
 	}
 	while (userAnswer != END && root != nullptr);
 
-
-
-	
 
 	OutputToFile(root, output);
 	return EXIT_SUCCESS;
