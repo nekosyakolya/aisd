@@ -79,11 +79,7 @@ void MergeTreeFile(Node **ptr, bool &doReadNextWord, std::fstream & tmp, Info & 
 		file >> data.value;
 	}
 
-	if (file.eof())
-	{
-		doReadNextWord = false;
-	}
-	//вынести в фию
+
 	if (data.key < (*ptr)->data.key && !file.eof())
 	{
 		tmp << data.key;
@@ -91,7 +87,7 @@ void MergeTreeFile(Node **ptr, bool &doReadNextWord, std::fstream & tmp, Info & 
 		tmp << data.value;
 		doReadNextWord = true;
 	}
-	else if (data.key > (*ptr)->data.key && !file.eof())
+	else if (data.key > (*ptr)->data.key)
 	{
 		tmp << (*ptr)->data.key;
 		tmp << " ";
@@ -99,13 +95,12 @@ void MergeTreeFile(Node **ptr, bool &doReadNextWord, std::fstream & tmp, Info & 
 		doReadNextWord = false;
 		(*ptr)->insertedInRightPlace = true;
 	}
-	else if (data.key == (*ptr)->data.key && !file.eof())
+	else if (data.key == (*ptr)->data.key)
 	{
 		tmp << data.key;
 		tmp << " ";
 		tmp << data.value;
 		doReadNextWord = true;
-		//(*ptr)->insertedInRightPlace = true;//у нас не выпишется это слово еще раз из дерева
 	}
 
 	if ((*ptr)->right != nullptr)
@@ -204,9 +199,14 @@ void InsertTreeToFile(Node **ptr)
 }
 
 
+bool IsFileEmpty()
+{
+	return file.peek() == std::fstream::traits_type::eof();
+}
+
 void DoSort(Node **ptr)
 {
-	if (!file.good())
+	if (IsFileEmpty())
 	{
 		file.close();
 		file.open("sort.dat", std::ios::binary | std::ios::out);
@@ -230,6 +230,8 @@ void InsertDataInTree(Node **ptr, const Info &data, size_t & num)
 		DoSort(&(*ptr));
 	}
 }
+
+
 
 void PrintFile(std::ofstream &output)
 {

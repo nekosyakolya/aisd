@@ -4,7 +4,7 @@
 
 
 
-static const size_t MAX_SIZE = 5;
+static const size_t MAX_SIZE = 50;
 
 
 struct Info
